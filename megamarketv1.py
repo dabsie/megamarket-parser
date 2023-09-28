@@ -5,6 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
+import pandas as pd
 
 
 class MegamarketParse:
@@ -52,12 +53,26 @@ class MegamarketParse:
                 bonus_percent = title.find_element(By.CSS_SELECTOR, "[class='bonus-percent']").text
             except NoSuchElementException:
                 bonus_percent = "0"  # Устанавливаем значение по умолчанию, если элемент не найден
+
+            bonus = bonus.replace(' ', '')
+            bonus_convert = float(bonus)*0.85
+
+            price = price.replace(' ', '')
+            price = price.replace('₽', '')
+            min_sell = float(price) - bonus_convert
+            
+            client_sell = float(price)*0.85
+            
             data = {
                 'name': name,
                 'url': url,
                 'price': price,
                 'bonus': bonus,
-                'bonus_percent': bonus_percent
+                'bonus_percent': bonus_percent,
+                'bonus_convert': bonus_convert,
+                'Min. sell': min_sell,
+                'Client sell': client_sell
+                
             }
             print(data)
             self.data.append(data)
@@ -67,6 +82,10 @@ class MegamarketParse:
         """Сохраняет результат в файл items.json"""
         with open("items_megamarket.json", 'w', encoding='utf-8') as f:
             json.dump(self.data, f, ensure_ascii=False, indent=4)
+
+        df = pd.DataFrame(self.data)
+        df.to_excel('goods.xlsx', index=False)
+        print("Готово")
 
     def parse(self):
         self.__set_up()
@@ -78,5 +97,5 @@ class MegamarketParse:
 if __name__ == "__main__":
     MegamarketParse(
         url='https://megamarket.ru/promo-page/udvaivaem-keshbek-pri-oplate-sberpay-do-80/',
-        count=2,
+        count=100,
     ).parse()
